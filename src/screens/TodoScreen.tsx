@@ -20,10 +20,14 @@ export const TodoScreen = () => {
   const failTodo = useBugBiteStore((state) => state.failTodo);
   const unlockTodo = useBugBiteStore((state) => state.unlockTodo);
   const smashTodo = useBugBiteStore((state) => state.smashTodo);
+  const updateTodo = useBugBiteStore((state) => state.updateTodo);
+  const deleteTodo = useBugBiteStore((state) => state.deleteTodo);
   const coins = useBugBiteStore((state) => state.coins);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [title, setTitle] = useState("");
   const [difficulty, setDifficulty] = useState<Difficulty>("easy");
+  const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Todo | null>(null);
   const [popupText, setPopupText] = useState<string | null>(null);
   const popupOpacity = useRef(new Animated.Value(0)).current;
 
@@ -39,13 +43,25 @@ export const TodoScreen = () => {
     setIsModalVisible(false);
     setTitle("");
     setDifficulty("easy");
+    setEditingTodo(null);
   };
 
-  const handleCreate = () => {
+  const handleOpenEdit = (todo: Todo) => {
+    setEditingTodo(todo);
+    setTitle(todo.title);
+    setDifficulty(todo.difficulty);
+    setIsModalVisible(true);
+  };
+
+  const handleSave = () => {
     if (!canCreate) {
       return;
     }
-    addTodo(title.trim(), difficulty);
+    if (editingTodo) {
+      updateTodo(editingTodo.id, { title: title.trim(), difficulty });
+    } else {
+      addTodo(title.trim(), difficulty);
+    }
     handleCloseModal();
   };
 
@@ -131,7 +147,23 @@ export const TodoScreen = () => {
           {isBoss && <Text style={styles.bugCrown}>👑</Text>}
         </View>
         <View style={styles.cardContent}>
-          <Text style={styles.cardTitle}>{item.title}</Text>
+          <View style={styles.cardTitleRow}>
+            <Text style={styles.cardTitle}>{item.title}</Text>
+            <View style={styles.actionRow}>
+              <Pressable
+                style={styles.iconButton}
+                onPress={() => handleOpenEdit(item)}
+              >
+                <Text style={styles.iconText}>✏️</Text>
+              </Pressable>
+              <Pressable
+                style={styles.iconButton}
+                onPress={() => setDeleteTarget(item)}
+              >
+                <Text style={styles.iconText}>🗑️</Text>
+              </Pressable>
+            </View>
+          </View>
           <View style={styles.metaRow}>
             <View style={styles.badge}>
               <Text style={styles.badgeText}>
@@ -195,7 +227,9 @@ export const TodoScreen = () => {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>New To Do</Text>
+            <Text style={styles.modalTitle}>
+              {editingTodo ? "Edit To Do" : "New To Do"}
+            </Text>
             <TextInput
               placeholder="Enter title"
               placeholderTextColor={theme.colors.muted}
@@ -237,10 +271,46 @@ export const TodoScreen = () => {
                   styles.createButton,
                   !canCreate && styles.createButtonDisabled
                 ]}
-                onPress={handleCreate}
+                onPress={handleSave}
                 disabled={!canCreate}
               >
-                <Text style={styles.createButtonText}>Create</Text>
+                <Text style={styles.createButtonText}>
+                  {editingTodo ? "Save" : "Create"}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+      <Modal
+        animationType="fade"
+        transparent
+        visible={deleteTarget !== null}
+        onRequestClose={() => setDeleteTarget(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.confirmCard}>
+            <Text style={styles.modalTitle}>Delete To Do?</Text>
+            <Text style={styles.modalBody}>
+              This will remove "{deleteTarget?.title}" immediately.
+            </Text>
+            <View style={styles.modalActions}>
+              <Pressable
+                style={styles.cancelButton}
+                onPress={() => setDeleteTarget(null)}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                style={styles.deleteButton}
+                onPress={() => {
+                  if (deleteTarget) {
+                    deleteTodo(deleteTarget.id);
+                  }
+                  setDeleteTarget(null);
+                }}
+              >
+                <Text style={styles.deleteButtonText}>Delete</Text>
               </Pressable>
             </View>
           </View>
@@ -335,14 +405,36 @@ const styles = StyleSheet.create({
     fontSize: 14
   },
   cardContent: {
-    flex: 1
+    flex: 1,
+    gap: theme.spacing.xs
+  },
+  cardTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: theme.spacing.sm
   },
   cardTitle: {
     color: theme.colors.text,
     fontSize: 16,
     fontWeight: "600",
-    flex: 1,
-    marginBottom: theme.spacing.xs
+    flex: 1
+  },
+  actionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing.xs
+  },
+  iconButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "#1f2a36",
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  iconText: {
+    fontSize: 12
   },
   metaRow: {
     flexDirection: "row",
@@ -495,6 +587,27 @@ const styles = StyleSheet.create({
     opacity: 0.5
   },
   createButtonText: {
+    color: "#0b0f14",
+    fontSize: 16,
+    fontWeight: "700"
+  },
+  confirmCard: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.md,
+    padding: theme.spacing.lg
+  },
+  modalBody: {
+    color: theme.colors.muted,
+    fontSize: 14,
+    marginBottom: theme.spacing.md
+  },
+  deleteButton: {
+    paddingVertical: theme.spacing.xs,
+    paddingHorizontal: theme.spacing.md,
+    backgroundColor: theme.colors.danger,
+    borderRadius: theme.radius.sm
+  },
+  deleteButtonText: {
     color: "#0b0f14",
     fontSize: 16,
     fontWeight: "700"
