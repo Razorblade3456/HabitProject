@@ -1,16 +1,14 @@
 import { StyleSheet, Text, View } from "react-native";
 import { theme } from "../theme";
 
-export function ShopScreen() {
+export const ShopScreen = () => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Shop</Text>
-      <Text style={styles.subtitle}>
-        Spend coins on upgrades, traps, and cosmetics.
-      </Text>
+      <Text style={styles.subtitle}>Coming next: add / smash loop</Text>
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -21,14 +19,13 @@ const styles = StyleSheet.create({
     padding: theme.spacing.lg
   },
   title: {
-    color: theme.colors.accentAlt,
+    color: theme.colors.text,
     fontSize: 28,
     fontWeight: "700",
     marginBottom: theme.spacing.sm
   },
   subtitle: {
     color: theme.colors.muted,
-    fontSize: 16,
-    textAlign: "center"
+    fontSize: 16
   }
 });
