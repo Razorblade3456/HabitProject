@@ -3,7 +3,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { StatusBar } from "expo-status-bar";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { theme } from "./src/theme";
-import { InfestationScreen } from "./src/screens/InfestationScreen";
+import { BugWorldScreen } from "./src/screens/BugWorldScreen";
 import { ProgressScreen } from "./src/screens/ProgressScreen";
 import { RecurrentScreen } from "./src/screens/RecurrentScreen";
 import { ShopScreen } from "./src/screens/ShopScreen";
@@ -53,7 +53,7 @@ export default function App() {
         <Tab.Screen name="To Do" component={TodoScreen} />
         <Tab.Screen name="Recurrent" component={RecurrentScreen} />
         <Tab.Screen name="Progress" component={ProgressScreen} />
-        <Tab.Screen name="Infestation" component={InfestationScreen} />
+        <Tab.Screen name="Infestation" component={BugWorldScreen} />
         <Tab.Screen name="Shop" component={ShopScreen} />
       </Tab.Navigator>
     </NavigationContainer>

@@ -9,3 +9,16 @@ export type Todo = {
   status: TodoStatus;
   createdAtISO: string;
 };
+
+export type RecurrentCadence = "daily" | "weekly" | "monthly";
+
+export type ActiveBugState = "locked" | "unlocked";
+
+export type Recurrent = {
+  id: string;
+  title: string;
+  difficulty: Difficulty;
+  cadence: RecurrentCadence;
+  activeBugState: ActiveBugState | null;
+  createdAtISO: string;
+};
