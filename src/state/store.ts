@@ -1,12 +1,13 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-import type { Difficulty, Todo } from "./types";
+import type { Difficulty, Recurrent, RecurrentCadence, Todo } from "./types";
 
 type MonthlyProgress = Record<string, number>;
 
 type BugBiteState = {
   todos: Todo[];
+  recurrent: Recurrent[];
   coins: number;
   infestation: number;
   monthlyProgress: MonthlyProgress;
@@ -15,6 +16,14 @@ type BugBiteState = {
   unlockTodo: (id: string) => void;
   smashTodo: (id: string) => void;
   failTodo: (id: string) => void;
+  addRecurrent: (
+    title: string,
+    difficulty: Difficulty,
+    cadence: RecurrentCadence
+  ) => void;
+  spawnDueRecurrentBugs: (dateISO: string) => void;
+  completeRecurrent: (id: string) => void;
+  smashRecurrent: (id: string) => void;
   setLoading: (loading: boolean) => void;
 };
 
@@ -58,6 +67,7 @@ export const useBugBiteStore = create<BugBiteState>()(
   persist(
     (set, get) => ({
       todos: [],
+      recurrent: [],
       coins: 0,
       infestation: 0,
       monthlyProgress: {},
@@ -74,6 +84,36 @@ export const useBugBiteStore = create<BugBiteState>()(
         };
         set((state) => ({
           todos: [newTodo, ...state.todos]
+        }));
+      },
+      addRecurrent: (title, difficulty, cadence) => {
+        const nowISO = new Date().toISOString();
+        const newRecurrent: Recurrent = {
+          id: generateId(),
+          title,
+          difficulty,
+          cadence,
+          activeBugState: null,
+          createdAtISO: nowISO
+        };
+        set((state) => ({
+          recurrent: [newRecurrent, ...state.recurrent]
+        }));
+      },
+      spawnDueRecurrentBugs: () => {
+        set((state) => ({
+          recurrent: state.recurrent.map((item) =>
+            item.activeBugState === null
+              ? { ...item, activeBugState: "unlocked" }
+              : item
+          )
+        }));
+      },
+      completeRecurrent: (id) => {
+        set((state) => ({
+          recurrent: state.recurrent.map((item) =>
+            item.id === id ? { ...item, activeBugState: null } : item
+          )
         }));
       },
       unlockTodo: (id) => {
@@ -96,6 +136,31 @@ export const useBugBiteStore = create<BugBiteState>()(
           });
           return {
             todos,
+            coins: state.coins + coinsEarned,
+            monthlyProgress: updateMonthlyProgress(
+              state.monthlyProgress,
+              monthKey,
+              1
+            )
+          };
+        });
+      },
+      smashRecurrent: (id) => {
+        const monthKey = getMonthKey(new Date().toISOString());
+        set((state) => {
+          let coinsEarned = 0;
+          const recurrent = state.recurrent.map((item) => {
+            if (item.id !== id) {
+              return item;
+            }
+            if (item.activeBugState !== "unlocked") {
+              return item;
+            }
+            coinsEarned = COIN_REWARDS[item.difficulty];
+            return { ...item, activeBugState: null };
+          });
+          return {
+            recurrent,
             coins: state.coins + coinsEarned,
             monthlyProgress: updateMonthlyProgress(
               state.monthlyProgress,
