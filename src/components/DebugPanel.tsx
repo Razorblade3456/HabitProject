@@ -22,7 +22,7 @@ export function DebugPanel() {
     recurrent,
     infestation,
     coins,
-    monthlyProgress,
+    monthlyStats,
     smashLog,
     settings,
     warning,
@@ -72,7 +72,7 @@ export function DebugPanel() {
       <View style={styles.row}>
         <Button
           label="Add Habit"
-          onPress={() => addRecurrent("Weekly Patrol", "medium", "weekly")}
+          onPress={() => addRecurrent("Weekly Patrol", "medium", "weekly", 1)}
         />
         <Button
           label="Spawn Bugs"
@@ -101,8 +101,8 @@ export function DebugPanel() {
         <Button label="Toggle Sound" onPress={toggleSound} />
       </View>
 
-      <Text style={styles.section}>Monthly Progress</Text>
-      <Text style={styles.json}>{JSON.stringify(monthlyProgress, null, 2)}</Text>
+      <Text style={styles.section}>Monthly Stats</Text>
+      <Text style={styles.json}>{JSON.stringify(monthlyStats, null, 2)}</Text>
       <Text style={styles.section}>Smash Log (last {smashLog.length})</Text>
       <Text style={styles.json}>
         {JSON.stringify(smashLog.slice(-5), null, 2)}
