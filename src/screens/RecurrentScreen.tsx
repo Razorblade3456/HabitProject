@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  Animated,
   FlatList,
   Modal,
   Pressable,
@@ -8,7 +9,9 @@ import {
   TextInput,
   View
 } from "react-native";
+import * as Haptics from "expo-haptics";
 import { useBugBiteStore } from "../state/store";
+import { playSfx } from "../state/sfx";
 import type { Difficulty, Habit, IntervalType } from "../state/types";
 import { theme } from "../theme";
 
@@ -34,6 +37,62 @@ const badgeStyle = (difficulty: Difficulty) => {
   }
 };
 
+const Popup = ({
+  text,
+  tone = "accent",
+  onDone
+}: {
+  text: string;
+  tone?: "accent" | "alt";
+  onDone: () => void;
+}) => {
+  const anim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.sequence([
+      Animated.timing(anim, {
+        toValue: 1,
+        duration: 160,
+        useNativeDriver: true
+      }),
+      Animated.timing(anim, {
+        toValue: 0,
+        duration: 300,
+        delay: 400,
+        useNativeDriver: true
+      })
+    ]).start(onDone);
+  }, [anim, onDone]);
+
+  return (
+    <Animated.View
+      style={[
+        styles.popup,
+        {
+          opacity: anim,
+          transform: [
+            {
+              translateY: anim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0, -12]
+              })
+            }
+          ]
+        }
+      ]}
+    >
+      <Text
+        style={[
+          styles.popupText,
+          tone === "alt" ? styles.popupTextAlt : styles.popupTextAccent
+        ]}
+      >
+        {text}
+      </Text>
+    </Animated.View>
+  );
+};
+
 const HabitRow = ({
   item,
   onFail,
@@ -51,10 +110,59 @@ const HabitRow = ({
       : item.activeBugState === "locked"
         ? "Locked"
         : "Unlocked";
+  const shakeAnim = useRef(new Animated.Value(0)).current;
+  const tintAnim = useRef(new Animated.Value(0)).current;
+
+  const handleFail = () => {
+    onFail();
+    Animated.sequence([
+      Animated.timing(shakeAnim, {
+        toValue: 1,
+        duration: 80,
+        useNativeDriver: true
+      }),
+      Animated.timing(shakeAnim, {
+        toValue: -1,
+        duration: 80,
+        useNativeDriver: true
+      }),
+      Animated.timing(shakeAnim, {
+        toValue: 0,
+        duration: 80,
+        useNativeDriver: true
+      })
+    ]).start();
+    Animated.sequence([
+      Animated.timing(tintAnim, {
+        toValue: 1,
+        duration: 120,
+        useNativeDriver: false
+      }),
+      Animated.timing(tintAnim, {
+        toValue: 0,
+        duration: 220,
+        useNativeDriver: false
+      })
+    ]).start();
+  };
+
+  const shakeX = shakeAnim.interpolate({
+    inputRange: [-1, 1],
+    outputRange: [-6, 6]
+  });
+  const bgColor = tintAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [theme.colors.surface, "#2b141a"]
+  });
 
   return (
-    <View style={styles.card}>
-      <Pressable style={styles.actionButton} onPress={onFail}>
+    <Animated.View
+      style={[
+        styles.card,
+        { backgroundColor: bgColor, transform: [{ translateX: shakeX }] }
+      ]}
+    >
+      <Pressable style={styles.actionButton} onPress={handleFail}>
         <Text style={styles.actionText}>-</Text>
       </Pressable>
       <View style={styles.center}>
@@ -82,7 +190,7 @@ const HabitRow = ({
           </Pressable>
         ) : null}
       </View>
-    </View>
+    </Animated.View>
   );
 };
 
@@ -95,6 +203,12 @@ export function RecurrentScreen() {
   const completeRecurrent = useBugBiteStore((state) => state.completeRecurrent);
   const smashRecurrent = useBugBiteStore((state) => state.smashRecurrent);
   const failItem = useBugBiteStore((state) => state.failItem);
+  const soundOn = useBugBiteStore((state) => state.settings.soundOn);
+
+  const popupIdRef = useRef(0);
+  const [popups, setPopups] = useState<
+    { id: number; text: string; tone?: "accent" | "alt" }[]
+  >([]);
 
   const [modalVisible, setModalVisible] = useState(false);
   const [title, setTitle] = useState("");
@@ -119,6 +233,27 @@ export function RecurrentScreen() {
     setDifficulty("easy");
     setIntervalType("weekly");
     setModalVisible(false);
+  };
+
+  const showSmashPopups = (coins: number) => {
+    const popupId = popupIdRef.current + 1;
+    popupIdRef.current = popupId;
+    setPopups((current) => [
+      ...current,
+      { id: popupId, text: `+${coins} coins`, tone: "accent" },
+      { id: popupId + 1, text: "+1 feed", tone: "alt" }
+    ]);
+    popupIdRef.current += 1;
+  };
+
+  const handleSmash = (id: string) => {
+    smashRecurrent(id);
+    const { smashLog } = useBugBiteStore.getState();
+    const event = [...smashLog].reverse().find((item) => item.sourceId === id);
+    const coins = event?.coinsEarned ?? 0;
+    showSmashPopups(coins);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    playSfx("smash", soundOn);
   };
 
   return (
@@ -155,7 +290,7 @@ export function RecurrentScreen() {
             item={item}
             onFail={() => failItem("recurrent", item.id)}
             onComplete={() => completeRecurrent(item.id)}
-            onSmash={() => smashRecurrent(item.id)}
+            onSmash={() => handleSmash(item.id)}
           />
         )}
       />
@@ -235,6 +370,20 @@ export function RecurrentScreen() {
           </View>
         </View>
       </Modal>
+      <View pointerEvents="none" style={styles.popupLayer}>
+        {popups.map((popup) => (
+          <Popup
+            key={popup.id}
+            text={popup.text}
+            tone={popup.tone}
+            onDone={() =>
+              setPopups((current) =>
+                current.filter((item) => item.id !== popup.id)
+              )
+            }
+          />
+        ))}
+      </View>
     </View>
   );
 }
@@ -276,6 +425,28 @@ const styles = StyleSheet.create({
   listContent: {
     paddingBottom: theme.spacing.lg,
     gap: theme.spacing.sm
+  },
+  popupLayer: {
+    position: "absolute",
+    top: 120,
+    right: 24,
+    gap: theme.spacing.xs
+  },
+  popup: {
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: theme.spacing.xs,
+    borderRadius: theme.radius.sm,
+    backgroundColor: "#1f2a36"
+  },
+  popupText: {
+    fontSize: 12,
+    fontWeight: "700"
+  },
+  popupTextAccent: {
+    color: theme.colors.accent
+  },
+  popupTextAlt: {
+    color: theme.colors.accentAlt
   },
   emptyState: {
     backgroundColor: theme.colors.surface,

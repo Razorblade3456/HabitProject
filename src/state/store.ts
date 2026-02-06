@@ -40,8 +40,23 @@ const addDays = (dateISO: string, days: number) => {
 
 const addMonths = (dateISO: string, months: number) => {
   const date = new Date(dateISO);
-  date.setMonth(date.getMonth() + months);
-  return date.toISOString().slice(0, 10);
+  const year = date.getFullYear();
+  const month = date.getMonth();
+  const day = date.getDate();
+  const targetMonth = month + months;
+  const targetDate = new Date(year, targetMonth, 1);
+  const lastDay = new Date(
+    targetDate.getFullYear(),
+    targetDate.getMonth() + 1,
+    0
+  ).getDate();
+  const clampedDay = Math.min(day, lastDay);
+  const result = new Date(
+    targetDate.getFullYear(),
+    targetDate.getMonth(),
+    clampedDay
+  );
+  return result.toISOString().slice(0, 10);
 };
 
 const advanceDueDate = (dateISO: string, intervalType: IntervalType) => {

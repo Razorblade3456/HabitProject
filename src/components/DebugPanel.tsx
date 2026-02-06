@@ -1,5 +1,7 @@
 import { ScrollView, StyleSheet, Text, View, Pressable } from "react-native";
+import * as Haptics from "expo-haptics";
 import { useBugBiteStore } from "../state/store";
+import { playSfx } from "../state/sfx";
 import { theme } from "../theme";
 
 const Button = ({
@@ -38,6 +40,11 @@ export function DebugPanel() {
 
   const firstTodo = todos[0];
   const firstHabit = recurrent[0];
+  const handleBuyPoison = (size: "small" | "medium" | "large") => {
+    buyPoison(size);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    playSfx("poison", settings.soundOn);
+  };
 
   return (
     <ScrollView style={styles.wrapper} contentContainerStyle={styles.content}>
@@ -90,7 +97,7 @@ export function DebugPanel() {
           label="Fail Habit"
           onPress={() => firstHabit && failItem("recurrent", firstHabit.id)}
         />
-        <Button label="Buy Small" onPress={() => buyPoison("small")} />
+        <Button label="Buy Small" onPress={() => handleBuyPoison("small")} />
         <Button label="Toggle Sound" onPress={toggleSound} />
       </View>
 
