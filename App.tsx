@@ -1,12 +1,14 @@
 import { NavigationContainer, DefaultTheme } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { StatusBar } from "expo-status-bar";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { theme } from "./src/theme";
 import { InfestationScreen } from "./src/screens/InfestationScreen";
 import { ProgressScreen } from "./src/screens/ProgressScreen";
 import { RecurrentScreen } from "./src/screens/RecurrentScreen";
 import { ShopScreen } from "./src/screens/ShopScreen";
 import { TodoScreen } from "./src/screens/TodoScreen";
+import { useBugBiteStore } from "./src/state/store";
 
 const Tab = createBottomTabNavigator();
 
@@ -23,6 +25,16 @@ const navTheme = {
 };
 
 export default function App() {
+  const loading = useBugBiteStore((state) => state.loading);
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={theme.colors.accent} />
+      </View>
+    );
+  }
+
   return (
     <NavigationContainer theme={navTheme}>
       <StatusBar style="light" />
@@ -47,3 +59,12 @@ export default function App() {
     </NavigationContainer>
   );
 }
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+    alignItems: "center",
+    justifyContent: "center"
+  }
+});
