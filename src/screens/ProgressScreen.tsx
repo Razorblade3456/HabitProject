@@ -1,4 +1,5 @@
 import { StyleSheet, Text, View } from "react-native";
+import { DebugPanel } from "../components/DebugPanel";
 import { theme } from "../theme";
 
 export function ProgressScreen() {
@@ -8,6 +9,7 @@ export function ProgressScreen() {
       <Text style={styles.subtitle}>
         Monthly bug-smash streaks and coins land here.
       </Text>
+      <DebugPanel />
     </View>
   );
 }
