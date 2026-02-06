@@ -1,6 +1,7 @@
 import { NavigationContainer, DefaultTheme } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { StatusBar } from "expo-status-bar";
+import { Platform, StyleSheet, Text, View } from "react-native";
 import { theme } from "./src/theme";
 import { InfestationScreen } from "./src/screens/InfestationScreen";
 import { ProgressScreen } from "./src/screens/ProgressScreen";
@@ -23,6 +24,14 @@ const navTheme = {
 };
 
 export default function App() {
+  if (Platform.OS === "web") {
+    return (
+      <View style={styles.webPlaceholder}>
+        <Text style={styles.webPlaceholderText}>BugBite loaded ✅</Text>
+      </View>
+    );
+  }
+
   return (
     <NavigationContainer theme={navTheme}>
       <StatusBar style="light" />
@@ -47,3 +56,17 @@ export default function App() {
     </NavigationContainer>
   );
 }
+
+const styles = StyleSheet.create({
+  webPlaceholder: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: theme.colors.background
+  },
+  webPlaceholderText: {
+    color: theme.colors.text,
+    fontSize: 20,
+    fontWeight: "600"
+  }
+});
