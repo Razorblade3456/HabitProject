@@ -72,7 +72,7 @@ export function DebugPanel() {
       <View style={styles.row}>
         <Button
           label="Add Habit"
-          onPress={() => addRecurrent("Weekly Patrol", "medium", "weekly")}
+          onPress={() => addRecurrent("Weekly Patrol", "medium", "weekly", 1)}
         />
         <Button
           label="Spawn Bugs"
