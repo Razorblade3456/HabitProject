@@ -3,5 +3,6 @@
     "strict": true,
     "jsx": "react-native",
     "noEmit": true
-  }
+  },
+  "extends": "expo/tsconfig.base"
 }
